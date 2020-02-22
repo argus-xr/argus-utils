@@ -1,6 +1,16 @@
 #include "netbuffer.h"
 #include <cstring>
 
+
+// htons/htonl
+#if defined(_WIN32)
+#include <winsock2.h>
+#elif defined(arduino_h)
+#include <WiFi.h>
+#else
+#include <arpa/inet.h>
+#endif
+
 void NetBuffer::insertBuffer(uint8_t* buffer, uint32_t length, bool copyBuffer) {
 	uint32_t neededSize = length + internalBufferContentSize;
 	if (internalBuffer == nullptr || neededSize > internalBufferMemorySize) {
@@ -66,7 +76,7 @@ uint8_t* NetBuffer::extractBufferAt(uint32_t pos, uint32_t length) {
 	return nullptr;
 }
 
-int32_t NetBuffer::findByteSequence(uint8_t* sequence, uint32_t sequenceLength, uint32_t startPos) {
+int32_t NetBuffer::findByteSequence(const uint8_t* sequence, uint32_t sequenceLength, uint32_t startPos) {
 	if (internalBuffer != nullptr) {
 		for (uint32_t i = startPos; i <= internalBufferContentSize - sequenceLength; ++i) {
 			for (uint32_t j = 0; j < sequenceLength; ++j) {
@@ -84,4 +94,61 @@ int32_t NetBuffer::findByteSequence(uint8_t* sequence, uint32_t sequenceLength, 
 
 void NetBuffer::setResizeStep(uint32_t step) {
 	bufferResizeStep = step;
+}
+
+
+
+// NETMESSAGE
+
+NetMessage::NetMessage(uint8_t* buffer, uint32_t length) {
+	internalBuffer = buffer;
+	bufferLength = length;
+}
+
+bool NetMessage::isValid() {
+	return (internalBuffer != nullptr);
+}
+
+void NetMessage::setReadPos(uint32_t pos) {
+	bufferPos = pos;
+}
+
+uint8_t NetMessage::readuint8() {
+	if (bufferLength < bufferPos + 1) {
+		// fail
+		return 0;
+	}
+	return internalBuffer[bufferPos];
+}
+
+uint16_t NetMessage::readuint16() {
+	if (bufferLength < bufferPos + 2) {
+		// fail
+		return 0;
+	}
+	uint16_t tmp = 0;
+	tmp |= internalBuffer[bufferPos] << 8;
+	tmp |= internalBuffer[bufferPos + 1];
+	return ntohs(tmp);
+}
+
+uint32_t NetMessage::readuint32() {
+	if (bufferLength < bufferPos + 4) {
+		// fail
+		return 0;
+	}
+	uint32_t tmp = 0;
+	tmp |= internalBuffer[bufferPos] << 24;
+	tmp |= internalBuffer[bufferPos + 1] << 16;
+	tmp |= internalBuffer[bufferPos + 2] << 8;
+	tmp |= internalBuffer[bufferPos + 3];
+	return ntohl(tmp);
+}
+
+uint8_t* NetMessage::getInternalBuffer() {
+	return internalBuffer;
+}
+
+uint32_t NetMessage::getInternalBufferLength() {
+	return bufferLength;
 }
