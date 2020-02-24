@@ -1,15 +1,7 @@
 #include "netbuffer.h"
 #include <cstring>
 
-
-// htons/htonl
-#if defined(_WIN32)
-#include <winsock2.h>
-#elif defined(arduino_h)
-#include <WiFi.h>
-#else
-#include <arpa/inet.h>
-#endif
+#include "netutils.h"
 
 void NetBuffer::insertBuffer(uint8_t* buffer, uint32_t length, bool copyBuffer) {
 	uint32_t neededSize = length + internalBufferContentSize;
@@ -98,30 +90,31 @@ void NetBuffer::setResizeStep(uint32_t step) {
 
 
 
-// NETMESSAGE
+// NETMESSAGEIN
 
-NetMessage::NetMessage(uint8_t* buffer, uint32_t length) {
+NetMessageIn::NetMessageIn(uint8_t* buffer, uint32_t length) {
 	internalBuffer = buffer;
 	bufferLength = length;
 }
 
-bool NetMessage::isValid() {
+bool NetMessageIn::isValid() {
 	return (internalBuffer != nullptr);
 }
 
-void NetMessage::setReadPos(uint32_t pos) {
+void NetMessageIn::setReadPos(uint32_t pos) {
 	bufferPos = pos;
 }
 
-uint8_t NetMessage::readuint8() {
+uint8_t NetMessageIn::readuint8() {
 	if (bufferLength < bufferPos + 1) {
 		// fail
 		return 0;
 	}
+	bufferPos += 1;
 	return internalBuffer[bufferPos];
 }
 
-uint16_t NetMessage::readuint16() {
+uint16_t NetMessageIn::readuint16() {
 	if (bufferLength < bufferPos + 2) {
 		// fail
 		return 0;
@@ -129,10 +122,11 @@ uint16_t NetMessage::readuint16() {
 	uint16_t tmp = 0;
 	tmp |= internalBuffer[bufferPos] << 8;
 	tmp |= internalBuffer[bufferPos + 1];
-	return ntohs(tmp);
+	bufferPos += 2;
+	return ArgusNetUtils::toHostOrder(tmp);
 }
 
-uint32_t NetMessage::readuint32() {
+uint32_t NetMessageIn::readuint32() {
 	if (bufferLength < bufferPos + 4) {
 		// fail
 		return 0;
@@ -142,13 +136,94 @@ uint32_t NetMessage::readuint32() {
 	tmp |= internalBuffer[bufferPos + 1] << 16;
 	tmp |= internalBuffer[bufferPos + 2] << 8;
 	tmp |= internalBuffer[bufferPos + 3];
-	return ntohl(tmp);
+	bufferPos += 4;
+	return ArgusNetUtils::toHostOrder(tmp);
 }
 
-uint8_t* NetMessage::getInternalBuffer() {
+uint64_t NetMessageIn::readVarInt() {
+	// Variable-length integer; starts with least significant bytes.
+	uint64_t result = 0;
+	uint64_t base = 1;
+	for (int i = 0; i < 8; ++i) {
+		uint8_t step = readuint8();
+		if (step > 127) {
+			result += base * (step - 128); // Got to read another byte.
+			base *= 128;
+		}
+		else {
+			result += base * step;
+			return result;
+		}
+	}
+	return 0;
+}
+
+std::string NetMessageIn::readFixedString(uint32_t length) {
+	if (bufferLength < bufferPos + length) {
+		return "";
+		// fail?
+	}
+	char* text = new char[length];
+	std::memcpy(text, internalBuffer + bufferPos, length);
+	std::string s(text, length);
+	return s;
+}
+
+std::string NetMessageIn::readVarString() {
+	uint64_t length = readVarInt();
+	return readFixedString((uint32_t) length);
+}
+
+uint8_t* NetMessageIn::getInternalBuffer() {
 	return internalBuffer;
 }
 
-uint32_t NetMessage::getInternalBufferLength() {
+uint32_t NetMessageIn::getInternalBufferLength() {
 	return bufferLength;
+}
+
+
+
+// NETMESSAGEOUT
+
+NetMessageOut::NetMessageOut(uint32_t length) {
+	if (length > 0) {
+		internalBuffer = new uint8_t[length];
+	}
+	else {
+		internalBuffer = new uint8_t[128]; // no dealing with null pointers.
+	}
+}
+void NetMessageOut::writeuint8(uint8_t val) {
+
+}
+void NetMessageOut::writeuint16(uint16_t val) {
+
+}
+void NetMessageOut::writeuint32(uint32_t val) {
+
+}
+uint8_t* NetMessageOut::getInternalBuffer() {
+	return internalBuffer;
+}
+uint32_t NetMessageOut::getInternalBufferLength() {
+	return bufferLength;
+}
+void NetMessageOut::reserveBufferSize(uint32_t requiredLength) {
+	if (requiredLength > bufferLength) {
+		uint8_t* tmp = internalBuffer;
+		internalBuffer = new uint8_t[requiredLength];
+		std::memcpy(internalBuffer, tmp, bufferPos);
+	}
+}
+
+void NetMessageOut::ensureSpaceFor(uint32_t extraBytes, bool exact) {
+	if (bufferPos + extraBytes > bufferLength) {
+		if (exact) {
+			reserveBufferSize(bufferPos + extraBytes); // reserve some extra to reduce reallocations.
+		}
+		else {
+			reserveBufferSize(bufferPos + extraBytes + 128); // reserve some extra to reduce reallocations.
+		}
+	}
 }

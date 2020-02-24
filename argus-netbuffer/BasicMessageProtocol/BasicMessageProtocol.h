@@ -3,16 +3,19 @@
 
 #include "../netbuffer.h"
 
-class BasicMessageBuffer : NetBuffer {
+class BasicMessageBuffer : public NetBuffer {
 public:
 	void checkMessages();
-	NetMessage* popMessage();
+	NetMessageIn* popMessage();
 protected:
-	NetMessage** messageList = nullptr;
+	NetMessageIn** messageList = nullptr;
 	uint8_t messageListNum = 0;
 	uint8_t messageListMax = 5;
 	uint8_t messageListPos = 0;
-	const uint8_t delimiter[2] = { '\\', '\0'};
+	const uint8_t startSequence[2] = { '\\', 0 };
+	const uint32_t startSequenceLength = 2;
+	const uint8_t endSequence[2] = { '\\', 1 };
+	const uint32_t endSequenceLength = 2;
 	void resizeMessageList(uint8_t size);
 };
 
