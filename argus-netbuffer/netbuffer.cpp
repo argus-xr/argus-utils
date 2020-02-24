@@ -111,7 +111,7 @@ uint8_t NetMessageIn::readuint8() {
 		return 0;
 	}
 	bufferPos += 1;
-	return internalBuffer[bufferPos];
+	return internalBuffer[bufferPos - 1];
 }
 
 uint16_t NetMessageIn::readuint16() {
