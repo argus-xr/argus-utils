@@ -30,7 +30,7 @@ public:
 	uint16_t readuint16();
 	uint32_t readuint32();
 	uint64_t readVarInt();
-	std::string readFixedString(uint32_t length);
+	uint8_t* readByteBlob(uint32_t length);
 	std::string readVarString();
 	uint8_t* getInternalBuffer();
 	uint32_t getInternalBufferLength();
@@ -46,10 +46,16 @@ public:
 	void writeuint8(uint8_t val);
 	void writeuint16(uint16_t val);
 	void writeuint32(uint32_t val);
+	void writeVarInt(uint64_t val);
+	uint8_t bytesToFitVarInt(uint64_t val);
+	void writeByteBlob(uint8_t* blob, uint32_t length);
+	void writeVarString(std::string text);
+
 	uint8_t* getInternalBuffer();
 	uint32_t getInternalBufferLength();
 protected:
 	void reserveBufferSize(uint32_t requiredLength);
+	void ensureSpaceFor(uint32_t extraBytes);
 	void ensureSpaceFor(uint32_t extraBytes, bool exact);
 	uint8_t* internalBuffer;
 	uint32_t bufferLength = 0;

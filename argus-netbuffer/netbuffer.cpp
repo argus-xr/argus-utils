@@ -141,37 +141,24 @@ uint32_t NetMessageIn::readuint32() {
 }
 
 uint64_t NetMessageIn::readVarInt() {
-	// Variable-length integer; starts with least significant bytes.
-	uint64_t result = 0;
-	uint64_t base = 1;
-	for (int i = 0; i < 8; ++i) {
-		uint8_t step = readuint8();
-		if (step > 127) {
-			result += base * (step - 128); // Got to read another byte.
-			base *= 128;
-		}
-		else {
-			result += base * step;
-			return result;
-		}
-	}
-	return 0;
+	uint64_t val;
+	bufferPos += ArgusNetUtils::readVarInt(internalBuffer + bufferPos, val); //TODO: Tell it how many bytes it can read, so it can stop and error if it would go out of bounds.
+	return val;
 }
 
-std::string NetMessageIn::readFixedString(uint32_t length) {
+uint8_t* NetMessageIn::readByteBlob(uint32_t length) {
 	if (bufferLength < bufferPos + length) {
-		return "";
+		return nullptr;
 		// fail?
 	}
-	char* text = new char[length];
-	std::memcpy(text, internalBuffer + bufferPos, length);
-	std::string s(text, length);
-	return s;
+	uint8_t* blob = new uint8_t[length];
+	std::memcpy(blob, internalBuffer + bufferPos, length);
+	return blob;
 }
 
 std::string NetMessageIn::readVarString() {
 	uint64_t length = readVarInt();
-	return readFixedString((uint32_t) length);
+	return std::string((char*) readByteBlob((uint32_t) length), length);
 }
 
 uint8_t* NetMessageIn::getInternalBuffer() {
@@ -195,13 +182,39 @@ NetMessageOut::NetMessageOut(uint32_t length) {
 	}
 }
 void NetMessageOut::writeuint8(uint8_t val) {
-
+	ensureSpaceFor(1);
+	internalBuffer[bufferPos] = val;
+	bufferPos += 1;
 }
 void NetMessageOut::writeuint16(uint16_t val) {
-
+	uint16_t netOrder = ArgusNetUtils::toNetworkOrder(val);
+	internalBuffer[bufferPos] = (uint8_t) (netOrder >> 8);
+	internalBuffer[bufferPos + 1] = (uint8_t) (netOrder);
+	bufferPos += 2;
 }
 void NetMessageOut::writeuint32(uint32_t val) {
-
+	uint32_t netOrder = ArgusNetUtils::toNetworkOrder(val);
+	internalBuffer[bufferPos] = (uint8_t) (netOrder >> 24);
+	internalBuffer[bufferPos + 1] = (uint8_t) (netOrder >> 16);
+	internalBuffer[bufferPos + 2] = (uint8_t) (netOrder >> 8);
+	internalBuffer[bufferPos + 3] = (uint8_t) (netOrder);
+	bufferPos += 4;
+}
+void NetMessageOut::writeVarInt(uint64_t val) {
+	ensureSpaceFor(bytesToFitVarInt(val));
+	bufferPos += ArgusNetUtils::writeVarInt(internalBuffer + bufferPos, val);
+}
+uint8_t NetMessageOut::bytesToFitVarInt(uint64_t val) {
+	return ArgusNetUtils::bytesToFitVarInt(val);
+}
+void NetMessageOut::writeByteBlob(uint8_t* blob, uint32_t length) {
+	ensureSpaceFor(length);
+	std::memcpy(internalBuffer + bufferPos, blob, length);
+}
+void NetMessageOut::writeVarString(std::string text) {
+	uint64_t length = text.length();
+	writeVarInt(length);
+	writeByteBlob((uint8_t*) text.c_str(), length);
 }
 uint8_t* NetMessageOut::getInternalBuffer() {
 	return internalBuffer;
@@ -226,4 +239,8 @@ void NetMessageOut::ensureSpaceFor(uint32_t extraBytes, bool exact) {
 			reserveBufferSize(bufferPos + extraBytes + 128); // reserve some extra to reduce reallocations.
 		}
 	}
+}
+
+void NetMessageOut::ensureSpaceFor(uint32_t extraBytes) {
+	ensureSpaceFor(extraBytes, false);
 }

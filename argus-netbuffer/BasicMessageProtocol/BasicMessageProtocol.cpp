@@ -1,6 +1,8 @@
 #include "BasicMessageProtocol.h"
 #include <cstring>
 
+#include "argus-netbuffer/netutils.h"
+
 void BasicMessageBuffer::checkMessages() {
 	if (messageListNum < 250) { // don't overflow the message array
 		int32_t pos = findByteSequence(startSequence, startSequenceLength, 0);
@@ -53,6 +55,62 @@ NetMessageIn* BasicMessageBuffer::popMessage() {
 		return ret;
 	}
 	return nullptr;
+}
+
+uint32_t BasicMessageBuffer::messageOutToByteArray(uint8_t* &outBuf, NetMessageOut* msg) {
+	uint32_t pSize = msg->getInternalBufferLength();
+	uint8_t varIntSize = msg->bytesToFitVarInt(pSize);
+	uint8_t* varIntBuf = new uint8_t[varIntSize];
+	ArgusNetUtils::writeVarInt(varIntBuf, pSize);
+
+	uint32_t extra = startSequenceLength + endSequenceLength + varIntSize;
+
+	for(int i = 0; i < varIntSize; ++i) {
+		if(varIntBuf[i] == escapeCharacter) {
+			extra ++; // We need an extra spot for an escape character.
+		}
+	}
+
+	uint8_t* b = msg->getInternalBuffer();
+	for(int i = 0; i < pSize; ++i) {
+		if(b[i] == escapeCharacter) {
+		extra ++; // We need an extra spot for an escape character.
+		}
+	}
+	
+	outBuf = new uint8_t[pSize + extra];
+
+	extra = 0; // now using this to track the offset from escape characters.
+	for(int i = 0; i < startSequenceLength; ++i) {
+		outBuf[i] = startSequence[i];
+	}
+	uint32_t start = startSequenceLength;
+
+	for(int i = 0; i < varIntSize; ++i) {
+		uint8_t byte = varIntBuf[i];
+		if(byte == escapeCharacter) {
+			outBuf[start + i + extra] = escapeCharacter; // insert an escape before the actual escape character, so it represents the actual character. \\ becomes \.
+			extra ++;
+		}
+		outBuf[start + i + extra] = byte;
+	}
+	start += varIntSize;
+
+	for(int i = 0; i < pSize; ++i) {
+		uint8_t byte = startSequence[i + startSequenceLength];
+		if(byte == escapeCharacter) {
+			outBuf[start + i + extra] = escapeCharacter; // see above.
+			extra ++;
+		}
+		outBuf[start + i + extra] = byte;
+	}
+	start += pSize;
+	
+	for(int i = 0; i < endSequenceLength; ++i) {
+		outBuf[start + i + extra] = endSequence[i];
+	}
+
+	return pSize + extra; // actual size in bytes.
 }
 
 void BasicMessageBuffer::resizeMessageList(uint8_t size) {
