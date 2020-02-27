@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "argus-netbuffer/netutils.h"
+#include <limits.h>
 
 void BasicMessageBuffer::checkMessages() {
 	if (messageListNum < 250) { // don't overflow the message array
