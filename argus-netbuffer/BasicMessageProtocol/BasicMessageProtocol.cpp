@@ -18,8 +18,9 @@ void BasicMessageBuffer::checkMessages() {
 			}
 			if (posFound) {
 				chop = endpos + endSequenceLength;
-				//TODO: read message length, which is the 2 bytes after the delimiter.
-				int32_t messageLength = endpos - 4; // 2-byte start sequence and 2 bytes of length
+				uint64_t length = 0;
+				uint8_t bytes = ArgusNetUtils::readVarInt(internalBuffer, length); // read a VarInt into length. The number of bytes used is stored in bytes.
+				int32_t messageLength = endpos - (2 + bytes); // 2-byte start sequence.
 				if (messageLength > 0) {
 					uint8_t* nmbuf = new uint8_t[messageLength];
 					std::memcpy(nmbuf, internalBuffer + 4, messageLength);
@@ -58,12 +59,12 @@ NetMessageIn* BasicMessageBuffer::popMessage() {
 }
 
 uint32_t BasicMessageBuffer::messageOutToByteArray(uint8_t* &outBuf, NetMessageOut* msg) {
-	uint32_t pSize = msg->getInternalBufferLength();
+	uint32_t pSize = msg->getContentLength();
 	uint8_t varIntSize = msg->bytesToFitVarInt(pSize);
 	uint8_t* varIntBuf = new uint8_t[varIntSize];
 	ArgusNetUtils::writeVarInt(varIntBuf, pSize);
 
-	uint32_t extra = startSequenceLength + endSequenceLength + varIntSize;
+	uint32_t extra = 0;
 
 	for(int i = 0; i < varIntSize; ++i) {
 		if(varIntBuf[i] == escapeCharacter) {
@@ -71,14 +72,18 @@ uint32_t BasicMessageBuffer::messageOutToByteArray(uint8_t* &outBuf, NetMessageO
 		}
 	}
 
-	uint8_t* b = msg->getInternalBuffer();
+	uint8_t* msgbuf = msg->getInternalBuffer();
 	for(int i = 0; i < pSize; ++i) {
-		if(b[i] == escapeCharacter) {
+		if(msgbuf[i] == escapeCharacter) {
 		extra ++; // We need an extra spot for an escape character.
 		}
 	}
 	
-	outBuf = new uint8_t[pSize + extra];
+	uint64_t outBufSize = (uint64_t) startSequenceLength + varIntSize + pSize + endSequenceLength + extra;
+	if (outBufSize > ULONG_MAX) {
+		return 0; // message size has to fit in uint32_t. Throw something?
+	}
+	outBuf = new uint8_t[outBufSize];
 
 	extra = 0; // now using this to track the offset from escape characters.
 	for(int i = 0; i < startSequenceLength; ++i) {
@@ -97,7 +102,7 @@ uint32_t BasicMessageBuffer::messageOutToByteArray(uint8_t* &outBuf, NetMessageO
 	start += varIntSize;
 
 	for(int i = 0; i < pSize; ++i) {
-		uint8_t byte = startSequence[i + startSequenceLength];
+		uint8_t byte = msgbuf[i];
 		if(byte == escapeCharacter) {
 			outBuf[start + i + extra] = escapeCharacter; // see above.
 			extra ++;
@@ -110,7 +115,7 @@ uint32_t BasicMessageBuffer::messageOutToByteArray(uint8_t* &outBuf, NetMessageO
 		outBuf[start + i + extra] = endSequence[i];
 	}
 
-	return pSize + extra; // actual size in bytes.
+	return outBufSize; // actual size in bytes.
 }
 
 void BasicMessageBuffer::resizeMessageList(uint8_t size) {

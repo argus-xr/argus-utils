@@ -52,7 +52,7 @@ public:
 	void writeVarString(std::string text);
 
 	uint8_t* getInternalBuffer();
-	uint32_t getInternalBufferLength();
+	uint32_t getContentLength();
 protected:
 	void reserveBufferSize(uint32_t requiredLength);
 	void ensureSpaceFor(uint32_t extraBytes);

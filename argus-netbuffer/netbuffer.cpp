@@ -7,7 +7,8 @@ void NetBuffer::insertBuffer(uint8_t* buffer, uint32_t length, bool copyBuffer) 
 	uint32_t neededSize = length + internalBufferContentSize;
 	if (internalBuffer == nullptr || neededSize > internalBufferMemorySize) {
 		uint8_t* oldBuffer = internalBuffer;
-		internalBuffer = new uint8_t[neededSize + bufferResizeStep];
+		uint32_t newSize = neededSize + bufferResizeStep;
+		internalBuffer = new uint8_t[newSize];
 		if (oldBuffer != nullptr) {
 			std::memcpy(internalBuffer, oldBuffer, internalBufferContentSize);
 		}
@@ -158,7 +159,14 @@ uint8_t* NetMessageIn::readByteBlob(uint32_t length) {
 
 std::string NetMessageIn::readVarString() {
 	uint64_t length = readVarInt();
-	return std::string((char*) readByteBlob((uint32_t) length), length);
+	if (bufferLength < bufferPos + length) {
+		return "";
+		// fail?
+	}
+	uint8_t* blob = new uint8_t[length + 1]; // for /0 character
+	blob[length] = '\0';
+	std::memcpy(blob, internalBuffer + bufferPos, length);
+	return std::string((char*)blob, length + 1);
 }
 
 uint8_t* NetMessageIn::getInternalBuffer() {
@@ -210,23 +218,26 @@ uint8_t NetMessageOut::bytesToFitVarInt(uint64_t val) {
 void NetMessageOut::writeByteBlob(uint8_t* blob, uint32_t length) {
 	ensureSpaceFor(length);
 	std::memcpy(internalBuffer + bufferPos, blob, length);
+	bufferPos += length;
 }
 void NetMessageOut::writeVarString(std::string text) {
-	uint64_t length = text.length();
+	uint64_t length = text.length(); // returns length without trailing /0, which is fine.
 	writeVarInt(length);
 	writeByteBlob((uint8_t*) text.c_str(), length);
 }
 uint8_t* NetMessageOut::getInternalBuffer() {
 	return internalBuffer;
 }
-uint32_t NetMessageOut::getInternalBufferLength() {
-	return bufferLength;
+uint32_t NetMessageOut::getContentLength() {
+	return bufferPos;
 }
 void NetMessageOut::reserveBufferSize(uint32_t requiredLength) {
 	if (requiredLength > bufferLength) {
 		uint8_t* tmp = internalBuffer;
 		internalBuffer = new uint8_t[requiredLength];
 		std::memcpy(internalBuffer, tmp, bufferPos);
+		bufferLength = requiredLength;
+		delete[] tmp;
 	}
 }
 
