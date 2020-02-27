@@ -19,11 +19,11 @@ void BasicMessageBuffer::checkMessages() {
 			if (posFound) {
 				chop = endpos + endSequenceLength;
 				uint64_t length = 0;
-				uint8_t bytes = ArgusNetUtils::readVarInt(internalBuffer, length); // read a VarInt into length. The number of bytes used is stored in bytes.
-				int32_t messageLength = endpos - (2 + bytes); // 2-byte start sequence.
+				uint8_t varIntBytes = ArgusNetUtils::readVarInt(internalBuffer, length); // read a VarInt into length. The number of bytes used is stored in bytes.
+				int32_t messageLength = endpos - (startSequenceLength + varIntBytes);
 				if (messageLength > 0) {
 					uint8_t* nmbuf = new uint8_t[messageLength];
-					std::memcpy(nmbuf, internalBuffer + 4, messageLength);
+					std::memcpy(nmbuf, internalBuffer + varIntBytes + startSequenceLength, messageLength);
 					NetMessageIn* newMessage = new NetMessageIn(nmbuf, messageLength);
 					if (messageList == nullptr || messageListNum >= messageListMax) {
 						resizeMessageList(messageListMax + 10);
