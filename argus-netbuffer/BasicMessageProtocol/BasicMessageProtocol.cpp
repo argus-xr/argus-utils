@@ -24,7 +24,19 @@ void BasicMessageBuffer::checkMessages() {
 				int32_t messageLength = endpos - (startSequenceLength + varIntBytes);
 				if (messageLength > 0) {
 					uint8_t* nmbuf = new uint8_t[messageLength];
-					std::memcpy(nmbuf, internalBuffer + varIntBytes + startSequenceLength, messageLength);
+					uint32_t offset = 0;
+					uint32_t bufOffset = varIntBytes + startSequenceLength;
+					for (int i = 0; i < messageLength; ++i) {
+						if (internalBuffer[bufOffset + i] == escapeCharacter) {
+							if (i < messageLength - 1 && internalBuffer[bufOffset + i + 1] == escapeCharacter) {
+								nmbuf[i - offset] = escapeCharacter;
+								offset += 1;
+								i++; // skip one step because we already covered it.
+							}
+						}
+						nmbuf[i - offset] = internalBuffer[bufOffset + i];
+					}
+					messageLength -= offset; // actual message length without escapes.
 					NetMessageIn* newMessage = new NetMessageIn(nmbuf, messageLength);
 					if (messageList == nullptr || messageListNum >= messageListMax) {
 						resizeMessageList(messageListMax + 10);
