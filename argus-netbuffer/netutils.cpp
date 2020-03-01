@@ -51,7 +51,7 @@ namespace ArgusNetUtils {
         return 0;
     }
     uint8_t bytesToFitVarInt(uint64_t val) {
-        uint8_t mult = 128;
+        uint64_t mult = 128;
         for(int i = 1; i <= 10; ++i) {
             if(val < mult) {
                 return i;
