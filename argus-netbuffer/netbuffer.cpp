@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "netutils.h"
+#include "stdexcept"
 
 void NetBuffer::insertBuffer(uint8_t* buffer, uint32_t length, bool copyBuffer) {
 	uint32_t neededSize = length + internalBufferContentSize;
@@ -119,7 +120,7 @@ uint8_t NetMessageIn::readuint<uint8_t>() {
 template <typename T>
 T NetMessageIn::readuint() {
 	if (bufferLength < bufferPos + sizeof(T)) {
-		throw new std::exception("Reading beyond end of buffer.");
+		throw new std::length_error(std::string("Reading beyond end of buffer."));
 	}
 	T tmp = 0;
 	for (int i = 0; i < sizeof(T); ++i) {
