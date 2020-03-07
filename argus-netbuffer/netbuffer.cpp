@@ -251,7 +251,3 @@ void NetMessageOut::ensureSpaceFor(uint32_t extraBytes, bool exact) {
 		}
 	}
 }
-
-void NetMessageOut::ensureSpaceFor(uint32_t extraBytes) {
-	ensureSpaceFor(extraBytes, false);
-}

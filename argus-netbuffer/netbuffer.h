@@ -55,8 +55,7 @@ public:
 	uint32_t getContentLength();
 protected:
 	void reserveBufferSize(uint32_t requiredLength);
-	void ensureSpaceFor(uint32_t extraBytes);
-	void ensureSpaceFor(uint32_t extraBytes, bool exact);
+	void ensureSpaceFor(uint32_t extraBytes, bool exact = false);
 	uint8_t* internalBuffer;
 	uint32_t bufferLength = 0;
 	uint32_t bufferPos = 0;
