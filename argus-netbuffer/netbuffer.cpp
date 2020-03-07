@@ -106,13 +106,31 @@ void NetMessageIn::setReadPos(uint32_t pos) {
 	bufferPos = pos;
 }
 
-uint8_t NetMessageIn::readuint8() {
+template <>
+uint8_t NetMessageIn::readuint<uint8_t>() {
 	if (bufferLength < bufferPos + 1) {
 		// fail
 		return 0;
 	}
 	bufferPos += 1;
 	return internalBuffer[bufferPos - 1];
+}
+
+template <typename T>
+T NetMessageIn::readuint() {
+	if (bufferLength < bufferPos + sizeof(T)) {
+		throw new std::exception("Reading beyond end of buffer.");
+	}
+	T tmp = 0;
+	for (int i = 0; i < sizeof(T); ++i) {
+		tmp |= internalBuffer[bufferPos + i] << i * 8; // should have the order reversed, turning network order to host order.
+	}
+	bufferPos += sizeof(T);
+	return tmp;
+}
+
+uint8_t NetMessageIn::readuint8() {
+	return readuint<uint8_t>();
 }
 
 uint16_t NetMessageIn::readuint16() {
@@ -184,11 +202,30 @@ uint32_t NetMessageIn::getInternalBufferLength() {
 NetMessageOut::NetMessageOut(uint32_t length) {
 	if (length > 0) {
 		internalBuffer = new uint8_t[length];
+		bufferLength = length;
 	}
 	else {
 		internalBuffer = new uint8_t[128]; // no dealing with null pointers.
+		bufferLength = 128;
 	}
 }
+
+template <>
+void NetMessageOut::writeuint<uint8_t>(uint8_t val) {
+	ensureSpaceFor(1);
+	internalBuffer[bufferPos] = val;
+	bufferPos += 1;
+}
+
+template <typename T>
+void NetMessageOut::writeuint(T val) {
+	ensureSpaceFor(sizeof(T));
+	for (int i = 0; i < sizeof(T); ++i) {
+		internalBuffer[bufferPos + i] = (uint8_t)(val >> i * 8);
+	}
+	bufferPos += sizeof(T);
+}
+
 void NetMessageOut::writeuint8(uint8_t val) {
 	ensureSpaceFor(1);
 	internalBuffer[bufferPos] = val;
@@ -244,7 +281,7 @@ void NetMessageOut::reserveBufferSize(uint32_t requiredLength) {
 void NetMessageOut::ensureSpaceFor(uint32_t extraBytes, bool exact) {
 	if (bufferPos + extraBytes > bufferLength) {
 		if (exact) {
-			reserveBufferSize(bufferPos + extraBytes); // reserve some extra to reduce reallocations.
+			reserveBufferSize(bufferPos + extraBytes);
 		}
 		else {
 			reserveBufferSize(bufferPos + extraBytes + 128); // reserve some extra to reduce reallocations.

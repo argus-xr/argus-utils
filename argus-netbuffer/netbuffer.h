@@ -26,6 +26,8 @@ public:
 	NetMessageIn(uint8_t* buffer, uint32_t length);
 	bool isValid();
 	void setReadPos(uint32_t pos);
+	template <typename T>
+	T readuint();
 	uint8_t readuint8();
 	uint16_t readuint16();
 	uint32_t readuint32();
@@ -43,6 +45,8 @@ protected:
 class NetMessageOut {
 public:
 	NetMessageOut(uint32_t length);
+	template <typename T>
+	void writeuint(T val);
 	void writeuint8(uint8_t val);
 	void writeuint16(uint16_t val);
 	void writeuint32(uint32_t val);
