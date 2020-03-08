@@ -19,10 +19,10 @@ void BasicMessageBuffer::checkMessages() {
 			}
 			if (posFound) {
 				chop = endpos + endSequenceLength;
-				uint64_t length = 0;
-				uint8_t varIntBytes = ArgusNetUtils::readVarInt(internalBuffer, length); // read a VarInt into length. The number of bytes used is stored in bytes.
-				int32_t messageLength = endpos - (startSequenceLength + varIntBytes);
-				if (messageLength > 0) {
+				uint64_t length = 0; // length VarInt, used to verify that the entire message was received. Not used yet.
+				uint8_t varIntBytes = ArgusNetUtils::readVarInt(internalBuffer + startSequenceLength, length); // read a VarInt into length. The number of bytes used is stored in bytes.
+				int32_t messageLength = endpos - (startSequenceLength + varIntBytes); // endpos is the start of the end-sequence, so don't subtract endSequenceLength.
+				if (messageLength > 0 && messageLength == length) {
 					uint8_t* nmbuf = new uint8_t[messageLength];
 					uint32_t offset = 0;
 					uint32_t bufOffset = varIntBytes + startSequenceLength;
