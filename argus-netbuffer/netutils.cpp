@@ -10,18 +10,36 @@
 #endif
 
 namespace ArgusNetUtils {
-    uint16_t toNetworkOrder(uint16_t val) {
+    template <>
+    uint8_t toNetworkOrder<uint8_t>(uint8_t val) {
+        return val;
+    }
+
+    template <>
+    uint16_t toNetworkOrder<uint16_t>(uint16_t val) {
         return htons(val);
     }
-    uint16_t toHostOrder(uint16_t val) {
-        return ntohs(val);
-    }
-    uint32_t toNetworkOrder(uint32_t val) {
+
+    template <>
+    uint32_t toNetworkOrder<uint32_t>(uint32_t val) {
         return htonl(val);
     }
-    uint32_t toHostOrder(uint32_t val) {
+
+    template <>
+    uint8_t toHostOrder<uint8_t>(uint8_t val) {
+        return val;
+    }
+
+    template <>
+    uint16_t toHostOrder<uint16_t>(uint16_t val) {
+        return ntohs(val);
+    }
+
+    template <>
+    uint32_t toHostOrder<uint32_t>(uint32_t val) {
         return ntohl(val);
     }
+
     uint8_t writeVarInt(uint8_t* buf, uint64_t val) {
         uint64_t div = 1;
         for(int i = 0; i < 10; ++i) { // 70 bits max, enough to store uint64_t

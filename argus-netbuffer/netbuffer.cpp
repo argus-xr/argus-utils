@@ -124,10 +124,10 @@ T NetMessageIn::readuint() {
 	}
 	T tmp = 0;
 	for (int i = 0; i < sizeof(T); ++i) {
-		tmp |= internalBuffer[bufferPos + i] << i * 8; // should have the order reversed, turning network order to host order.
+		tmp |= internalBuffer[bufferPos + i] << (sizeof(T) - i - 1) * 8;
 	}
 	bufferPos += sizeof(T);
-	return tmp;
+	return ArgusNetUtils::toHostOrder<T>(tmp);
 }
 
 uint8_t NetMessageIn::readuint8() {
@@ -221,8 +221,9 @@ void NetMessageOut::writeuint<uint8_t>(uint8_t val) {
 template <typename T>
 void NetMessageOut::writeuint(T val) {
 	ensureSpaceFor(sizeof(T));
+	val = ArgusNetUtils::toNetworkOrder<T>(val);
 	for (int i = 0; i < sizeof(T); ++i) {
-		internalBuffer[bufferPos + i] = (uint8_t)(val >> i * 8);
+		internalBuffer[bufferPos + i] = (uint8_t)(val >> (sizeof(T) - i - 1) * 8);
 	}
 	bufferPos += sizeof(T);
 }
