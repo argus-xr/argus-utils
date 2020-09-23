@@ -41,11 +41,10 @@ namespace ArgusNetUtils {
     }
 
     uint8_t writeVarInt(uint8_t* buf, uint64_t val) {
-        uint64_t div = 1;
         for(int i = 0; i < 10; ++i) { // 70 bits max, enough to store uint64_t
-            buf[i] = (uint8_t) (val / div) + ((val < div * 128) ? 0 : 128);
-            div *= 128;
-            if(val < div) {
+            buf[i] = (uint8_t) (val % 128) + ((val < 128) ? 0 : 128);
+            val /= 128;
+            if(val <= 0) {
                 return i + 1; // number of bytes used
             }
         }
