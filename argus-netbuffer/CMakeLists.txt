@@ -14,4 +14,4 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 target_sources(argus-libnetbuffer PRIVATE netbuffer.h netbuffer.cpp BasicMessageProtocol/BasicMessageProtocol.h BasicMessageProtocol/BasicMessageProtocol.cpp netutils.h netutils.cpp)
 target_include_directories(argus-libnetbuffer PUBLIC ../)
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/Test)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Test)
