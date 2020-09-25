@@ -22,7 +22,7 @@ void BasicMessageBuffer::checkMessages() {
 				uint64_t length = 0; // length VarInt, used to verify that the entire message was received. Not used yet.
 				uint8_t varIntBytes = ArgusNetUtils::readVarInt(internalBuffer + startSequenceLength, length); // read a VarInt into length. The number of bytes used is stored in bytes.
 				int32_t messageLength = endpos - (startSequenceLength + varIntBytes); // endpos is the start of the end-sequence, so don't subtract endSequenceLength.
-				if (messageLength > 0 && messageLength == length) {
+				if (messageLength >= length) { // message with escaped characters is longer than or equal to expected length
 					uint8_t* nmbuf = new uint8_t[messageLength];
 					uint32_t offset = 0;
 					uint32_t bufOffset = varIntBytes + startSequenceLength;
@@ -37,19 +37,21 @@ void BasicMessageBuffer::checkMessages() {
 						nmbuf[i - offset] = internalBuffer[bufOffset + i];
 					}
 					messageLength -= offset; // actual message length without escapes.
-					NetMessageIn* newMessage = new NetMessageIn(nmbuf, messageLength);
-					if (messageList == nullptr || messageListNum >= messageListMax) {
-						resizeMessageList(messageListMax + 10);
+					if (messageLength == length) {
+						NetMessageIn* newMessage = new NetMessageIn(nmbuf, messageLength);
+						if (messageList == nullptr || messageListNum >= messageListMax) {
+							resizeMessageList(messageListMax + 10);
+						}
+						messageList[messageListNum] = newMessage;
+						messageListNum += 1;
 					}
-					messageList[messageListNum] = newMessage;
-					messageListNum += 1;
 				}
 			}
 		}
 		else if (pos > 0) {
 			chop = pos;
 		}
-		else if (internalBufferContentSize > 100) { // there's 100 bytes worth of garbage in here that won't ever match the protocol, ditch it!
+		else if (internalBufferContentSize > 100000) { // there's 100000 bytes worth of garbage in here that won't ever match the protocol, ditch it!
 			chop = internalBufferContentSize - startSequenceLength; // there could be a partial valid delimiter at the end, so don't delete everything.
 		}
 		if (chop > 0) {
