@@ -99,6 +99,13 @@ NetMessageIn::NetMessageIn(uint8_t* buffer, uint32_t length) {
 	bufferLength = length;
 }
 
+NetMessageIn::~NetMessageIn() {
+	if(internalBuffer != nullptr) {
+		delete[] internalBuffer;
+		internalBuffer = nullptr;
+	}
+}
+
 bool NetMessageIn::isValid() {
 	return (internalBuffer != nullptr);
 }
@@ -208,6 +215,13 @@ NetMessageOut::NetMessageOut(uint32_t length) {
 	else {
 		internalBuffer = new uint8_t[128]; // no dealing with null pointers.
 		bufferLength = 128;
+	}
+}
+
+NetMessageOut::~NetMessageOut() {
+	if(internalBuffer != nullptr) {
+		delete[] internalBuffer;
+		internalBuffer = nullptr;
 	}
 }
 

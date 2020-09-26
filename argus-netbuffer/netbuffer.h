@@ -24,6 +24,7 @@ protected:
 class NetMessageIn {
 public:
 	NetMessageIn(uint8_t* buffer, uint32_t length);
+	~NetMessageIn();
 	bool isValid();
 	void setReadPos(uint32_t pos);
 	template <typename T>
@@ -37,7 +38,7 @@ public:
 	uint8_t* getInternalBuffer();
 	uint32_t getInternalBufferLength();
 protected:
-	uint8_t* internalBuffer;
+	uint8_t* internalBuffer;// = nullptr;
 	uint32_t bufferLength = 0;
 	uint32_t bufferPos = 0;
 };
@@ -45,6 +46,7 @@ protected:
 class NetMessageOut {
 public:
 	NetMessageOut(uint32_t length);
+	~NetMessageOut();
 	template <typename T>
 	void writeuint(T val);
 	void writeuint8(uint8_t val);
@@ -60,7 +62,7 @@ public:
 protected:
 	void reserveBufferSize(uint32_t requiredLength);
 	void ensureSpaceFor(uint32_t extraBytes, bool exact = false);
-	uint8_t* internalBuffer;
+	uint8_t* internalBuffer;// = nullptr;
 	uint32_t bufferLength = 0;
 	uint32_t bufferPos = 0;
 };
