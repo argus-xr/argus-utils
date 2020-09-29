@@ -12,7 +12,7 @@ void BasicMessageBuffer::checkMessages() {
 			bool posFound = false;
 			int32_t endpos = 1;
 			while (!posFound && endpos > 0) { // endpos < 0 means there's no more matching sequences.
-				endpos = findByteSequence(endSequence, endSequenceLength, endpos);
+				endpos = findByteSequence(endSequence, endSequenceLength, endpos + 1);
 				if (endpos > 0 && getByteAt(endpos - 1) != '\\') { // check if the \ character is escaped, which would make the \0 not count.
 					posFound = true;
 				}
