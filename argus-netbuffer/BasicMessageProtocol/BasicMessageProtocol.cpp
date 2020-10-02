@@ -148,19 +148,25 @@ OutPacket* BasicMessageBuffer::messageToOutPacket(NetMessageOut* msg) {
 }
 
 void BasicMessageBuffer::resizeMessageList(uint8_t size) {
-	if (size == 0) {
-		delete[] messageList;
-		messageList = nullptr;
+	if (size <= 0) {
+		size == 5;
+		/*if (messageList) {
+			delete[] messageList;
+			messageList = nullptr;
+		}*/
 	}
-	else {
-		if (size < messageListNum) {
-			size = messageListNum; // don't drop messages
+	//else {
+		if (size < messageListNum + 5) {
+			size = messageListNum + 5; // don't drop messages
 		}
 		NetMessageIn** tmp = messageList;
 		messageList = new NetMessageIn *[size];
-		if (tmp != nullptr) {
-			std::memcpy(messageList, tmp + messageListPos, messageListNum - messageListPos);
+		if (tmp) {
+			for (int i = 0; i < messageListNum - messageListPos; i++) {
+				messageList[i-messageListPos] = tmp[i];
+			}
+			//std::memcpy(messageList, tmp + messageListPos, messageListNum - messageListPos);
 			delete[] tmp;
 		}
-	}
+	//}
 }
