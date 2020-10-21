@@ -3,6 +3,8 @@
 // htons/htonl
 #if defined(_WIN32)
 #include <winsock2.h>
+#elif defined(__XTENSA__) // ESP-IDF
+#include <lwip/sockets.h>
 #elif defined(ESP_PLATFORM)
 #include <WiFi.h>
 #else

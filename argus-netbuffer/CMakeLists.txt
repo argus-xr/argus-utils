@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD 17)            # Enable c++17 standard
 add_library(argus-libnetbuffer STATIC)
 
 if(WIN32)
-  target_link_libraries(argus-libnetbuffer wsock32 ws2_32)
+	target_link_libraries(argus-libnetbuffer wsock32 ws2_32)
+endif()
+
+if("${IDF_TARGET}" STREQUAL "esp32")
+	target_link_libraries(argus-libnetbuffer PRIVATE idf::lwip)
 endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
