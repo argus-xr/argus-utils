@@ -50,3 +50,7 @@ TEST(VarIntTest, test1) {
 		}
 	}
 }
+
+TEST(testTest) { // test whether testing works...
+	EXPECT_EQ(2+2, 4);
+}
