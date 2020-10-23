@@ -32,7 +32,7 @@ public:
 	uint32_t getLength();
 	uint8_t getByteAt(uint32_t pos);
 	uint8_t* extractBufferAt(uint32_t pos, uint32_t length);
-	int32_t findByteSequence(const uint8_t* sequence, uint32_t sequenceLength, uint32_t startPos);
+	int32_t findByteSequence(const uint8_t* sequence, uint32_t sequenceLength, int32_t startPos);
 	static std::string debugBuffer(uint8_t* buffer, uint32_t length);
 	static std::string debugBuffer(uint8_t* buffer, uint32_t length, uint32_t amount);
 

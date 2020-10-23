@@ -17,49 +17,54 @@ BasicMessageBuffer::~BasicMessageBuffer() {
 }
 
 void BasicMessageBuffer::checkMessages() {
-	int32_t pos = findByteSequence(startSequence, startSequenceLength, 0);
-	int32_t chop = -1;
-	if (pos >= 0) {
-		bool posFound = false;
-		int32_t endpos = 1;
-		while (!posFound && endpos > 0) { // endpos < 0 means there's no more matching sequences.
-			endpos = findByteSequence(endSequence, endSequenceLength, endpos + 1);
-			if (endpos > 0 && getByteAt(endpos - 1) != '\\') { // check if the \ character is escaped, which would make the \0 not count.
-				posFound = true;
+	bool repeat = true;
+	while (repeat) {
+		repeat = false;
+		int32_t pos = findByteSequence(startSequence, startSequenceLength, 0);
+		int32_t chop = -1;
+		if (pos >= 0) {
+			bool posFound = false;
+			int32_t endpos = 1;
+			while (!posFound && endpos > 0) { // endpos < 0 means there's no more matching sequences.
+				endpos = findByteSequence(endSequence, endSequenceLength, endpos + 1);
+				if (endpos > 0 && getByteAt(endpos - 1) != '\\') { // check if the \ character is escaped, which would make the \0 not count.
+					posFound = true;
+				}
 			}
-		}
-		if (posFound) {
-			chop = endpos + endSequenceLength;
-			uint64_t length = 0; // length VarInt, used to verify that the entire message was received. Not used yet.
-			uint8_t varIntBytes = ArgusNetUtils::readVarInt(internalBuffer + startSequenceLength, length); // read a VarInt into length. The number of bytes used is stored in bytes.
-			int32_t messageLength = endpos - (startSequenceLength + varIntBytes) - pos; // endpos is the start of the end-sequence, so don't subtract endSequenceLength.
-			if (messageLength >= length) { // message with escaped characters is longer than or equal to expected length
-				uint8_t* nmbuf = new uint8_t[messageLength];
-				uint32_t offset = 0;
-				uint32_t bufOffset = varIntBytes + startSequenceLength;
-				for (int i = 0; i < messageLength; ++i) {
-					if (internalBuffer[bufOffset + i] == escapeCharacter) {
-						if (i < messageLength - 1 && internalBuffer[bufOffset + i + pos + 1] == escapeCharacter) {
-							nmbuf[i - offset] = escapeCharacter;
-							offset += 1;
-							i++; // skip one step because we already covered it.
+			if (posFound) {
+				chop = endpos + endSequenceLength;
+				uint64_t length = 0; // length VarInt, used to verify that the entire message was received. Not used yet.
+				uint8_t varIntBytes = ArgusNetUtils::readVarInt(internalBuffer + startSequenceLength, length); // read a VarInt into length. The number of bytes used is stored in bytes.
+				int32_t messageLength = endpos - (startSequenceLength + varIntBytes) - pos; // endpos is the start of the end-sequence, so don't subtract endSequenceLength.
+				if (messageLength >= length) { // message with escaped characters is longer than or equal to expected length
+					uint8_t* nmbuf = new uint8_t[messageLength];
+					uint32_t offset = 0;
+					uint32_t bufOffset = varIntBytes + startSequenceLength;
+					for (int i = 0; i < messageLength; ++i) {
+						if (internalBuffer[bufOffset + i] == escapeCharacter) {
+							if (i < messageLength - 1 && internalBuffer[bufOffset + i + pos + 1] == escapeCharacter) {
+								nmbuf[i - offset] = escapeCharacter;
+								offset += 1;
+								i++; // skip one step because we already covered it.
+							}
 						}
+						nmbuf[i - offset] = internalBuffer[bufOffset + i];
 					}
-					nmbuf[i - offset] = internalBuffer[bufOffset + i];
-				}
-				messageLength -= offset; // actual message length without escapes.
-				if (messageLength == length) {
-					NetMessageIn* newMessage = new NetMessageIn(nmbuf, messageLength, myMalloc, myFree);
-					messageList.push(newMessage);
+					messageLength -= offset; // actual message length without escapes.
+					if (messageLength == length) {
+						NetMessageIn* newMessage = new NetMessageIn(nmbuf, messageLength, myMalloc, myFree);
+						messageList.push(newMessage);
+					}
 				}
 			}
 		}
-	}
-	else if (internalBufferContentSize > 100000) { // there's 100000 bytes worth of garbage in here that won't ever match the protocol, ditch it!
-		chop = internalBufferContentSize - startSequenceLength; // there could be a partial valid delimiter at the end, so don't delete everything.
-	}
-	if (chop > 0) {
-		removeStartOfBuffer(chop);
+		else if (internalBufferContentSize > 100000) { // there's 100000 bytes worth of garbage in here that won't ever match the protocol, ditch it!
+			chop = internalBufferContentSize - startSequenceLength; // there could be a partial valid delimiter at the end, so don't delete everything.
+		}
+		if (chop > 0) {
+			removeStartOfBuffer(chop);
+			repeat = true;
+		}
 	}
 }
 

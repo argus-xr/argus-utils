@@ -116,9 +116,9 @@ uint8_t* NetBuffer::extractBufferAt(uint32_t pos, uint32_t length) {
 	return nullptr;
 }
 
-int32_t NetBuffer::findByteSequence(const uint8_t* sequence, uint32_t sequenceLength, uint32_t startPos) {
-	if (internalBuffer != nullptr) {
-		for (uint32_t i = startPos; i <= internalBufferContentSize - sequenceLength; ++i) {
+int32_t NetBuffer::findByteSequence(const uint8_t* sequence, uint32_t sequenceLength, int32_t startPos) {
+	if (internalBuffer != nullptr && internalBufferContentSize > sequenceLength) {
+		for (int32_t i = startPos; i <= internalBufferContentSize - sequenceLength; ++i) {
 			for (uint32_t j = 0; j < sequenceLength; ++j) {
 				if (internalBuffer[i + j] != sequence[j]) {
 					break; // break J loop, the sequence isn't here.
