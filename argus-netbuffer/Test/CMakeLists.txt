@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.13)  # CMake version check
 
-find_package(GTest)
-
 if(GTEST_FOUND)
 	set(BINARYFILE ${CMAKE_PROJECT_NAME}_test)
 	add_executable(${BINARYFILE} main.cpp VarInt.cpp)
