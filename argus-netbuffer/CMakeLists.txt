@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD 17)            # Enable c++17 standard
 
 
 add_library(argus-libnetbuffer STATIC)
+add_library(argus::libnetbuffer ALIAS argus-libnetbuffer)
 
 if(WIN32)
 	target_link_libraries(argus-libnetbuffer wsock32 ws2_32)
