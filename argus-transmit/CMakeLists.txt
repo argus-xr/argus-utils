@@ -16,12 +16,7 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 endif()
-target_sources(argus-libnetbuffer PRIVATE 	include/argus-netbuffer/netbuffer.h
-											src/netbuffer.cpp
-											include/argus-netbuffer/BasicMessageProtocol/BasicMessageProtocol.h
-											src/BasicMessageProtocol/BasicMessageProtocol.cpp
-											include/argus-netbuffer/netutils.h
-											src/netutils.cpp)
-target_include_directories(argus-libnetbuffer PUBLIC include/)
+target_sources(argus-libnetbuffer PRIVATE netbuffer.h netbuffer.cpp BasicMessageProtocol/BasicMessageProtocol.h BasicMessageProtocol/BasicMessageProtocol.cpp netutils.h netutils.cpp)
+target_include_directories(argus-libnetbuffer PUBLIC ../)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Test)

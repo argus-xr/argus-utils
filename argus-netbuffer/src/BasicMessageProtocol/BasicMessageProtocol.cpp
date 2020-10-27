@@ -1,4 +1,4 @@
-#include "BasicMessageProtocol.h"
+#include "argus-netbuffer/BasicMessageProtocol/BasicMessageProtocol.h"
 #include <cstring>
 
 #include "argus-netbuffer/netutils.h"

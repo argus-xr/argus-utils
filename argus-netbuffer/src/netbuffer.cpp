@@ -1,7 +1,7 @@
-#include "netbuffer.h"
+#include "argus-netbuffer/netbuffer.h"
 #include <cstring>
 
-#include "netutils.h"
+#include "argus-netbuffer/netutils.h"
 #include "stdexcept"
 #include "stdio.h"
 #include "stdlib.h"
