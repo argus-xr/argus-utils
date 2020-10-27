@@ -28,5 +28,7 @@ target_sources(argus-transmit PRIVATE 	include/argus-transmit/ConnectionBase.h
 										include/argus-transmit/QueueBase.h
 										include/argus-transmit/QueueSingle.h
 										src/QueueSingle.cpp
+										include/argus-transmit/QueueMany.h
+										src/QueueMany.cpp
 										src/ConnectionHandler.cpp)
 target_include_directories(argus-transmit PUBLIC include)

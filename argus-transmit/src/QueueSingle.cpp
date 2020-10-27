@@ -15,3 +15,8 @@ void QueueSingle::pushMessage(NetMessageOut* message, uint64_t timestamp) {
 	}
 	messageTimestamp.store(timestamp);
 }
+
+QueueSingle::~QueueSingle() {
+	NetMessageOut* msg = currentMessage.exchange(nullptr);
+	delete msg;
+}

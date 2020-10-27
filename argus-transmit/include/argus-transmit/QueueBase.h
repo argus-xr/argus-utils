@@ -9,6 +9,7 @@ public:
 	virtual NetMessageOut* popNextMessage() = 0;
 	virtual uint64_t nextMessageTimestamp() = 0;
 	virtual void pushMessage(NetMessageOut* message, uint64_t timestamp) = 0;
+	virtual ~QueueBase() = 0;
 };
 
 #endif // QUEUEBASE_H
