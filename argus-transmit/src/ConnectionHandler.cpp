@@ -15,6 +15,21 @@ ConnectionHandler::ConnectionHandler(ConnectionBase* connectionToUse, BasicMessa
 }
 
 void ConnectionHandler::poll() {
+	sendStuff();
+
+	auto [buf, buf_len] = connection->recv();
+	if (buf && buf_len > 0) {
+		bmbuf->insertBuffer(buf, buf_len, true);
+		delete buf;
+		bmbuf->checkMessages();
+	}
+}
+
+NetMessageIn* ConnectionHandler::popMessageIn() {
+	return bmbuf->popMessage();
+}
+
+void ConnectionHandler::sendStuff() {
 	while (true) {
 		if (!currentPacket) {
 			if (!getNewPacket()) {

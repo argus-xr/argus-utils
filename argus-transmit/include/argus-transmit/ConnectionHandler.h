@@ -21,10 +21,12 @@ protected:
 	uint16_t packetBufSpot = 0;
 
 	bool getNewPacket();
+	void sendStuff();
 
 public:
 	ConnectionHandler(ConnectionBase* connectionToUse, BasicMessageBuffer* bmbuf);
 	void poll();
+	NetMessageIn* popMessageIn();
 };
 
 #endif // CONNECTIONHANDLER_H
